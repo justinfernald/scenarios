@@ -14,12 +14,11 @@ export const VoteOnScenarioForm = observer(() => {
     e.preventDefault();
     try {
       await functionsModel.voteOnScenario(scenarioAId, scenarioBId, chosenScenarioId);
-      alert('Vote recorded successfully!');
       setScenarioAId('');
       setScenarioBId('');
       setChosenScenarioId('');
     } catch (error) {
-      alert(`Error: ${functionsModel.error}`);
+      console.error(`Error: ${functionsModel.error}`);
     }
   };
 

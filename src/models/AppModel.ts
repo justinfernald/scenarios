@@ -3,15 +3,18 @@ import { makeAutoObservable } from 'mobx';
 import { AuthModel } from './AuthModel';
 import { FunctionsModel } from './FunctionsModel';
 import { createContext, useContext } from 'react';
+import { DataModel } from './DataModel';
 
 export class AppModel {
   authModel: AuthModel;
   functionsModel: FunctionsModel;
+  dataModel: DataModel;
 
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
     this.authModel = new AuthModel();
     this.functionsModel = new FunctionsModel();
+    this.dataModel = new DataModel();
   }
 }
 

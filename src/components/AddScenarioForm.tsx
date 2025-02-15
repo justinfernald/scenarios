@@ -12,10 +12,9 @@ export const AddScenarioForm = observer(() => {
     e.preventDefault();
     try {
       await functionsModel.addScenario(scenarioText);
-      alert('Scenario added successfully!');
       setScenarioText('');
     } catch (error) {
-      alert(`Error: ${functionsModel.error}`);
+      console.error(`Error: ${functionsModel.error}`);
     }
   };
 

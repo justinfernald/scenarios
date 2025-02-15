@@ -2,6 +2,7 @@
 import { onCall } from 'firebase-functions/v2/https';
 import * as logger from 'firebase-functions/logger';
 import { getFirestore } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 
 export const voteOnScenario = onCall({ cors: true }, async (request) => {
   logger.info('voteOnScenario called', { structuredData: true });
@@ -12,78 +13,69 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
     throw new Error('Authentication required');
   }
 
-  const { scenarioAId, scenarioBId, chosenScenarioId } = request.data;
-  if (!scenarioAId || !scenarioBId || !chosenScenarioId) {
-    throw new Error('Scenario IDs are required.');
+  const { acceptedId, rejectedId } = request.data;
+  if (!acceptedId || !rejectedId) {
+    throw new Error('Accepted and Rejected Scenario IDs are required.');
   }
 
   const db = getFirestore();
-  const scenarioARef = db.collection('scenarios').doc(scenarioAId);
-  const scenarioBRef = db.collection('scenarios').doc(scenarioBId);
+  const acceptedRef = db.collection('scenarios').doc(acceptedId);
+  const rejectedRef = db.collection('scenarios').doc(rejectedId);
   const userRef = db.collection('users').doc(authUser.uid);
 
-  const [scenarioADoc, scenarioBDoc, userDoc] = await Promise.all([
-    scenarioARef.get(),
-    scenarioBRef.get(),
+  const [acceptedDoc, rejectedDoc, userDoc] = await Promise.all([
+    acceptedRef.get(),
+    rejectedRef.get(),
     userRef.get(),
   ]);
 
-  if (!scenarioADoc.exists || !scenarioBDoc.exists || !userDoc.exists) {
+  if (!acceptedDoc.exists || !rejectedDoc.exists || !userDoc.exists) {
     throw new Error('Scenario or user not found.');
   }
 
   /* eslint-disable @typescript-eslint/no-non-null-assertion */
-  const scenarioA = scenarioADoc.data()!;
-  const scenarioB = scenarioBDoc.data()!;
+  const acceptedScenario = acceptedDoc.data()!;
+  const rejectedScenario = rejectedDoc.data()!;
   const user = userDoc.data()!;
   /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
   // Check user credibility
   const credibilityThreshold = 50;
-  if (user.credibility < credibilityThreshold) {
-    return {
-      success: true,
-      message: 'Vote recorded but not applied due to low credibility.',
-    };
+
+  let wasConsidered = false;
+
+  if (user.credibility >= credibilityThreshold) {
+    wasConsidered = true;
+    // Calculate new ratings
+    const K = 32;
+    const expectedA =
+      1 / (1 + Math.pow(10, (rejectedScenario.rating - acceptedScenario.rating) / 400));
+    const expectedB =
+      1 / (1 + Math.pow(10, (acceptedScenario.rating - rejectedScenario.rating) / 400));
+
+    const newRatingA = acceptedScenario.rating + K * (1 - expectedA);
+    const newRatingB = rejectedScenario.rating + K * (0 - expectedB);
+
+    // Update scenario ratings
+    await Promise.all([
+      acceptedRef.update({
+        rating: newRatingA,
+        timesShown: acceptedScenario.timesShown + 1,
+        timesChosen: acceptedScenario.timesChosen + 1,
+        timesRejected: acceptedScenario.timesRejected,
+      }),
+      rejectedRef.update({
+        rating: newRatingB,
+        timesShown: rejectedScenario.timesShown + 1,
+        timesChosen: rejectedScenario.timesChosen,
+        timesRejected: rejectedScenario.timesRejected + 1,
+      }),
+    ]);
   }
 
-  // Calculate new ratings
-  const K = 32;
-  const expectedA = 1 / (1 + Math.pow(10, (scenarioB.rating - scenarioA.rating) / 400));
-  const expectedB = 1 / (1 + Math.pow(10, (scenarioA.rating - scenarioB.rating) / 400));
-
-  const newRatingA =
-    scenarioA.rating +
-    K * (chosenScenarioId === scenarioAId ? 1 - expectedA : 0 - expectedA);
-  const newRatingB =
-    scenarioB.rating +
-    K * (chosenScenarioId === scenarioBId ? 1 - expectedB : 0 - expectedB);
-
-  // Update scenario ratings
-  await Promise.all([
-    scenarioARef.update({
-      rating: newRatingA,
-      timesShown: scenarioA.timesShown + 1,
-      timesChosen:
-        chosenScenarioId === scenarioAId
-          ? scenarioA.timesChosen + 1
-          : scenarioA.timesChosen,
-    }),
-    scenarioBRef.update({
-      rating: newRatingB,
-      timesShown: scenarioB.timesShown + 1,
-      timesChosen:
-        chosenScenarioId === scenarioBId
-          ? scenarioB.timesChosen + 1
-          : scenarioB.timesChosen,
-    }),
-  ]);
-
   // Adjust user credibility based on scenario stability and rating difference
-  const ratingDifference = Math.abs(scenarioA.rating - scenarioB.rating);
-  const isChoiceExpected =
-    chosenScenarioId ===
-    (scenarioA.rating > scenarioB.rating ? scenarioAId : scenarioBId);
+  const ratingDifference = Math.abs(acceptedScenario.rating - rejectedScenario.rating);
+  const isChoiceExpected = acceptedScenario.rating > rejectedScenario.rating;
 
   let credibilityChange = 0;
   if (ratingDifference > 200) {
@@ -94,12 +86,24 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
     credibilityChange = isChoiceExpected ? 1 : -1;
   } else {
     // Small rating difference: credibility change is reduced
-    credibilityChange = isChoiceExpected ? 0.5 : -0.5;
+    credibilityChange = isChoiceExpected ? 0.1 : -0.1;
   }
 
   // Update user credibility
   const newCredibility = user.credibility + credibilityChange;
   await userRef.update({ credibility: newCredibility });
+
+  // Add a new vote document to the votes collection
+  const voteData = {
+    accepted: acceptedId,
+    rejected: rejectedId,
+    time: Timestamp.now(),
+    user: authUser.uid,
+    credibility: user.credibility,
+    wasConsidered,
+  };
+
+  await db.collection('votes').add(voteData);
 
   return { success: true };
 });

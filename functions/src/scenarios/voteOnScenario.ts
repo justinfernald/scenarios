@@ -43,6 +43,8 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
   const credibilityThreshold = 50;
 
   let wasConsidered = false;
+  let newRatingA = acceptedScenario.rating;
+  let newRatingB = rejectedScenario.rating;
 
   if (user.credibility >= credibilityThreshold) {
     wasConsidered = true;
@@ -53,8 +55,8 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
     const expectedB =
       1 / (1 + Math.pow(10, (acceptedScenario.rating - rejectedScenario.rating) / 400));
 
-    const newRatingA = acceptedScenario.rating + K * (1 - expectedA);
-    const newRatingB = rejectedScenario.rating + K * (0 - expectedB);
+    newRatingA = acceptedScenario.rating + K * (1 - expectedA);
+    newRatingB = rejectedScenario.rating + K * (0 - expectedB);
 
     // Update scenario ratings
     await Promise.all([
@@ -62,13 +64,11 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
         rating: newRatingA,
         timesShown: acceptedScenario.timesShown + 1,
         timesChosen: acceptedScenario.timesChosen + 1,
-        timesRejected: acceptedScenario.timesRejected,
       }),
       rejectedRef.update({
         rating: newRatingB,
         timesShown: rejectedScenario.timesShown + 1,
         timesChosen: rejectedScenario.timesChosen,
-        timesRejected: rejectedScenario.timesRejected + 1,
       }),
     ]);
   }
@@ -101,9 +101,11 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
     user: authUser.uid,
     credibility: user.credibility,
     wasConsidered,
+    acceptedRating: newRatingA,
+    rejectedRating: newRatingB,
   };
 
   await db.collection('votes').add(voteData);
 
-  return { success: true };
+  return { acceptedRating: newRatingA, rejectedRating: newRatingB };
 });

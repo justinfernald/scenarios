@@ -30,21 +30,23 @@ export class FunctionsModel {
 
   // Vote on a scenario
   async voteOnScenario(
-    scenarioAId: string,
-    scenarioBId: string,
-    chosenScenarioId: string,
-  ) {
+    acceptedId: string,
+    rejectedId: string,
+  ): Promise<{
+    acceptedRating: number;
+    rejectedRating: number;
+  }> {
     this.isLoading = true;
     this.error = null;
 
     try {
       const voteOnScenarioFunction = httpsCallable(functions, 'voteOnScenario');
       const result = await voteOnScenarioFunction({
-        scenarioAId,
-        scenarioBId,
-        chosenScenarioId,
+        acceptedId,
+        rejectedId,
       });
-      return result.data;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return result.data as any;
     } catch (error) {
       this.error = (error as Error).message;
       throw error;

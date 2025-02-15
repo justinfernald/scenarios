@@ -1,6 +1,6 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { makeAutoObservable } from 'mobx';
+import { flowResult, makeAutoObservable, runInAction, toJS } from 'mobx';
 
 export interface Scenario {
   id?: string;
@@ -21,8 +21,13 @@ export class DataModel {
   }
 
   async fetchScenarios() {
-    this.scenarios = await fetchAllScenarios();
-    console.log('Fetched Scenarios:', this.scenarios);
+    const scenarios = await fetchAllScenarios();
+
+    console.log('Fetched Scenarios:', scenarios);
+
+    runInAction(() => {
+      this.scenarios = scenarios;
+    });
   }
 }
 

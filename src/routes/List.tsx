@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 
 import { BaseViewModel, useViewModelConstructor } from '../utils/mobx/ViewModel';
 import { makeSimpleAutoObservable } from '../utils/mobx';
+import { ScenarioDataTable } from '../components/ScenarioDataTable';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ListViewModelProps {}
@@ -18,9 +19,5 @@ export const List = observer(() => {
   const appModel = useAppModel();
   const vm = useViewModelConstructor(ListViewModel, {});
 
-  return (
-    <div>
-      <h1>List</h1>
-    </div>
-  );
+  return <ScenarioDataTable />;
 });

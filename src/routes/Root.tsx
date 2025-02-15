@@ -4,6 +4,7 @@ import { BaseViewModel, useViewModelConstructor } from '../utils/mobx/ViewModel'
 import { makeSimpleAutoObservable } from '../utils/mobx';
 import {
   borderRadius,
+  center,
   flex1,
   fullHeight,
   fullSize,
@@ -150,11 +151,30 @@ const ScenarioButton = observer((props: ScenarioButtonProps) => {
               >
                 {scenarioText}
               </h1>
-              <div css={[{ position: 'absolute', bottom: 20, right: 20 }]}>
+              <FlexRow
+                justifyContent="center"
+                alignItems="center"
+                css={[
+                  {
+                    position: 'absolute',
+                    bottom: 20,
+                    right: 20,
+                    color: 'white',
+                    background: 'rgba(0,0,0,0.5)',
+                    padding: 4,
+                    borderRadius: 4,
+                    fontSize: 20,
+                    fontWeight: 'bold',
+                    visibility: selected ? 'visible' : 'hidden',
+                    opacity: selected ? 1 : 0,
+                    transition: 'opacity 0.5s ease',
+                  },
+                ]}
+              >
                 <NumberFlow value={Math.floor(rating)} />
                 {/* {rating} */}
                 {timesShown < 25 ? '?' : ''}
-              </div>
+              </FlexRow>
             </FlexColumn>
           </ButtonBase>
         </motion.div>
@@ -231,7 +251,28 @@ export const Root = observer(() => {
 
   return (
     <FlexColumn css={[fullSize]}>
-      <FlexRow css={[flex1, fullWidth, { padding: 20 }]} gap={20}>
+      <FlexRow css={[flex1, fullWidth, { padding: 20 }, relative()]} gap={20}>
+        <FlexColumn
+          justifyContent="center"
+          alignItems="center"
+          css={[
+            center,
+            {
+              color: 'white',
+              fontSize: 20,
+              fontWeight: 'bold',
+              background: '#000B',
+              height: 100,
+              width: 100,
+              zIndex: 100,
+              borderRadius: 50,
+              opacity: isAnimating ? 0 : 1,
+              transition: 'opacity 0.5s ease',
+            },
+          ]}
+        >
+          OR
+        </FlexColumn>
         <ScenarioContainer
           leftScenario={vm.leftScenario}
           rightScenario={vm.rightScenario}

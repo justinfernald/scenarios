@@ -1,73 +1,41 @@
 import {
   MaterialReactTable,
   MRT_ColumnDef,
-  MRT_RowSelectionState,
-  MRT_Updater,
   useMaterialReactTable,
 } from 'material-react-table';
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import { fullSize } from '../styles';
 import { Link } from '@mui/material';
-import { BaseViewModel } from '../utils/mobx/ViewModel';
+import { BaseViewModel, useViewModelConstructor } from '../utils/mobx/ViewModel';
 import { makeSimpleAutoObservable } from '../utils/mobx';
-import { AppModel } from '../models/AppModel';
-import { toJS } from 'mobx';
+import { AppModel, useAppModel } from '../models/AppModel';
 import { Link as RouterLink } from 'react-router-dom';
+import { Scenario } from '../models/DataModel';
 
-export interface Player {
-  name: string;
-  wins: number;
-  losses: number;
-  rating: number;
-  ranking: number;
-  startDate: number;
-}
-
-export interface PlayerDataTableViewModelProps {
+export interface ScenarioDataTableViewModelProps {
   appModel: AppModel;
 }
 
-export class PlayerDataTableViewModel extends BaseViewModel<PlayerDataTableViewModelProps> {
-  constructor(props: PlayerDataTableViewModelProps) {
+export class ScenarioDataTableViewModel extends BaseViewModel<ScenarioDataTableViewModelProps> {
+  constructor(props: ScenarioDataTableViewModelProps) {
     super(props);
     makeSimpleAutoObservable(this, {}, { autoBind: true });
   }
 
   get data() {
-    return this.props.appModel.playerData;
-  }
-
-  selectedPlayers: Set<string> = new Set();
-
-  setSelectedPlayers(players: Set<string>) {
-    this.selectedPlayers = players;
-  }
-
-  get rowSelection() {
-    return Array.from(this.selectedPlayers).reduce(
-      (acc, player) => ({ ...acc, [player]: true }),
-      {},
-    );
-  }
-
-  setRowSelection(updater: MRT_Updater<MRT_RowSelectionState>) {
-    const values = typeof updater === 'function' ? updater(this.rowSelection) : updater;
-
-    this.selectedPlayers = new Set(Object.keys(values).filter((key) => values[key]));
-
-    console.log(toJS(this.selectedPlayers));
+    return this.props.appModel.dataModel.scenarios;
   }
 }
 
-export interface PlayerDataTableProps {
-  viewModel: PlayerDataTableViewModel;
-}
+export const ScenarioDataTable = observer(() => {
+  const appModel = useAppModel();
 
-export const PlayerDataTable = observer((props: PlayerDataTableProps) => {
-  const { viewModel } = props;
+  const viewModel = useViewModelConstructor(ScenarioDataTableViewModel, {
+    appModel,
+  });
 
-  const columns = useMemo<MRT_ColumnDef<Player>[]>(
+  const columns = useMemo<MRT_ColumnDef<Scenario>[]>(
     () => [
       {
         accessorKey: 'name',
@@ -75,7 +43,7 @@ export const PlayerDataTable = observer((props: PlayerDataTableProps) => {
         enableHiding: false,
         size: 240,
         Cell: ({ cell }) => (
-          <Link component={RouterLink} to={`/player/${cell.getValue<string>()}`}>
+          <Link component={RouterLink} to={`/scenario/${cell.getValue<string>()}`}>
             {cell.getValue<string>()}
           </Link>
         ),
@@ -144,7 +112,7 @@ export const PlayerDataTable = observer((props: PlayerDataTableProps) => {
   );
 
   const table = useMaterialReactTable({
-    getRowId: (row) => row.name,
+    getRowId: (row) => row.scenarioText,
     columns,
     data: viewModel.data,
     enableBottomToolbar: false,
@@ -152,7 +120,7 @@ export const PlayerDataTable = observer((props: PlayerDataTableProps) => {
     // enableGlobalFilter: false,
 
     enableColumnResizing: true,
-    enableRowSelection: true,
+    // enableRowSelection: true,
     enableColumnOrdering: true,
     enableRowVirtualization: true,
     enablePagination: false,
@@ -165,11 +133,6 @@ export const PlayerDataTable = observer((props: PlayerDataTableProps) => {
     muiTableContainerProps: { sx: { flex: 1 } },
     muiTablePaperProps: {
       sx: { maxHeight: '100%', display: 'flex', flexDirection: 'column' },
-    },
-
-    onRowSelectionChange: viewModel.setRowSelection,
-    state: {
-      rowSelection: viewModel.rowSelection,
     },
 
     initialState: {

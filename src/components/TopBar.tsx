@@ -40,9 +40,6 @@ export const TopBar = observer(() => {
 
           {authModel.isLoggedIn ? (
             <>
-              <Button href="/profile" color="inherit" startIcon={<Person />}>
-                Profile
-              </Button>
               <IconButton color="inherit" onClick={authModel.signOut}>
                 <Logout />
               </IconButton>

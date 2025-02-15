@@ -6,6 +6,12 @@ import { getFirestore } from 'firebase-admin/firestore';
 export const removeScenario = onCall({ cors: true }, async (request) => {
   logger.info('removeScenario called', { structuredData: true });
 
+  // Ensure the user is authenticated
+  const user = request.auth;
+  if (!user) {
+    throw new Error('Authentication required');
+  }
+
   const { scenarioId } = request.data;
   if (!scenarioId) {
     throw new Error('Scenario ID is required.');

@@ -1,3 +1,6 @@
+import * as admin from 'firebase-admin';
+admin.initializeApp();
+
 // functions/src/index.ts
 import { addScenario } from './scenarios/addScenario';
 import { removeScenario } from './scenarios/removeScenario';

@@ -7,6 +7,12 @@ import { Scenario } from '../types';
 export const addScenario = onCall({ cors: true }, async (request) => {
   logger.info('addScenario called', { structuredData: true });
 
+  // Ensure the user is authenticated
+  const user = request.auth;
+  if (!user) {
+    throw new Error('Authentication required');
+  }
+
   const { scenarioText } = request.data;
   if (!scenarioText || scenarioText.length < 10) {
     throw new Error('Scenario text is too short.');
@@ -18,7 +24,7 @@ export const addScenario = onCall({ cors: true }, async (request) => {
     rating: 1000, // Default Elo rating
     timesShown: 0,
     timesChosen: 0,
-    createdBy: request.auth?.uid || 'anonymous',
+    createdBy: user.uid,
     createdAt: Timestamp.now(),
   };
 

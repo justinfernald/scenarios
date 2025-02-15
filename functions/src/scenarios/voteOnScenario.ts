@@ -6,6 +6,12 @@ import { getFirestore } from 'firebase-admin/firestore';
 export const voteOnScenario = onCall({ cors: true }, async (request) => {
   logger.info('voteOnScenario called', { structuredData: true });
 
+  // Ensure the user is authenticated
+  const authUser = request.auth;
+  if (!authUser) {
+    throw new Error('Authentication required');
+  }
+
   const { scenarioAId, scenarioBId, chosenScenarioId } = request.data;
   if (!scenarioAId || !scenarioBId || !chosenScenarioId) {
     throw new Error('Scenario IDs are required.');
@@ -14,7 +20,7 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
   const db = getFirestore();
   const scenarioARef = db.collection('scenarios').doc(scenarioAId);
   const scenarioBRef = db.collection('scenarios').doc(scenarioBId);
-  const userRef = db.collection('users').doc(request.auth?.uid || 'anonymous');
+  const userRef = db.collection('users').doc(authUser.uid);
 
   const [scenarioADoc, scenarioBDoc, userDoc] = await Promise.all([
     scenarioARef.get(),

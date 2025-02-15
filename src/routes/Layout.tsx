@@ -8,7 +8,8 @@ export const Layout = observer(() => {
     <FlexColumn
       css={[
         {
-          height: '100vh',
+          height: '100dvh',
+          overflow: 'hidden',
         },
       ]}
     >

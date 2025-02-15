@@ -9,11 +9,26 @@ export interface Scenario {
   timesShown: number;
   timesChosen: number;
   createdBy: string;
-  createdAt: number;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+  };
 }
 
 export class DataModel {
   scenarios: Scenario[] = [];
+
+  get rankingMap() {
+    const sortedScenarios = toJS(this.scenarios).sort((a, b) => b.rating - a.rating);
+
+    const rankingMap = new Map<string, number>();
+
+    sortedScenarios.forEach((scenario, index) => {
+      rankingMap.set(scenario.id!, index + 1);
+    });
+
+    return rankingMap;
+  }
 
   constructor() {
     this.fetchScenarios();

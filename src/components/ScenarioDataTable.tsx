@@ -6,12 +6,22 @@ import {
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import { fullSize } from '../styles';
-import { Link } from '@mui/material';
+import { Button, IconButton, Link } from '@mui/material';
 import { BaseViewModel, useViewModelConstructor } from '../utils/mobx/ViewModel';
 import { makeSimpleAutoObservable } from '../utils/mobx';
 import { AppModel, useAppModel } from '../models/AppModel';
 import { Link as RouterLink } from 'react-router-dom';
 import { Scenario } from '../models/DataModel';
+import {
+  Delete,
+  OpenInBrowser,
+  OpenInFull,
+  OpenInNew,
+  OpenWith,
+  QueryStats,
+} from '@mui/icons-material';
+import { FlexRow } from './base/Flex';
+import { DeleteButton } from './DeleteButton';
 
 export interface ScenarioDataTableViewModelProps {
   appModel: AppModel;
@@ -26,6 +36,10 @@ export class ScenarioDataTableViewModel extends BaseViewModel<ScenarioDataTableV
   get data() {
     return this.props.appModel.dataModel.scenarios;
   }
+
+  get rankingMap() {
+    return this.props.appModel.dataModel.rankingMap;
+  }
 }
 
 export const ScenarioDataTable = observer(() => {
@@ -38,18 +52,14 @@ export const ScenarioDataTable = observer(() => {
   const columns = useMemo<MRT_ColumnDef<Scenario>[]>(
     () => [
       {
-        accessorKey: 'name',
-        header: 'Name',
+        accessorKey: 'scenarioText',
+        header: 'Scenario',
         enableHiding: false,
-        size: 240,
-        Cell: ({ cell }) => (
-          <Link component={RouterLink} to={`/scenario/${cell.getValue<string>()}`}>
-            {cell.getValue<string>()}
-          </Link>
-        ),
+        size: 340,
       },
       {
-        accessorKey: 'ranking',
+        id: 'rank',
+        accessorFn: (row) => viewModel.rankingMap.get(row.id!) ?? Infinity,
         header: 'Rank',
         filterVariant: 'range',
         filterFn: 'betweenInclusive',
@@ -69,9 +79,11 @@ export const ScenarioDataTable = observer(() => {
           marks: true,
           step: 50,
         },
+
+        Cell: ({ cell }) => cell.getValue<number>().toFixed(0),
       },
       {
-        accessorKey: 'wins',
+        accessorKey: 'timesChosen',
         header: 'Wins',
         filterVariant: 'range',
         filterFn: 'betweenInclusive',
@@ -81,7 +93,7 @@ export const ScenarioDataTable = observer(() => {
         },
       },
       {
-        accessorKey: 'losses',
+        accessorFn: (row) => row.timesShown - row.timesChosen,
         header: 'Losses',
         filterVariant: 'range',
         filterFn: 'betweenInclusive',
@@ -91,9 +103,22 @@ export const ScenarioDataTable = observer(() => {
         },
       },
       {
-        accessorKey: 'startDate',
-        header: 'Start Date',
-        Cell: ({ cell }) => new Date(cell.getValue<number>()).toLocaleDateString(), //custom cell renderer
+        id: 'userMade',
+        accessorFn: (row) => row.createdBy === appModel.authModel.currentUser?.uid,
+        header: "User's",
+        filterVariant: 'checkbox',
+        filterFn: 'includes',
+        size: 164,
+        muiFilterCheckboxProps: {
+          color: 'primary',
+        },
+        Cell: ({ cell }) => (cell.getValue() ? 'Yes' : 'No'),
+      },
+      {
+        accessorKey: 'createdAt',
+        header: 'Created',
+        Cell: ({ cell }) =>
+          new Date(cell.row.original.createdAt.seconds * 1000).toLocaleDateString(), //custom cell renderer
         filterVariant: 'date-range',
         filterFn: 'betweenInclusive',
         size: 315,
@@ -106,6 +131,8 @@ export const ScenarioDataTable = observer(() => {
           className: 'mui-date-picker',
           format: 'MM/dd/yy',
         },
+        // hidden by default
+        hidden: true,
       },
     ],
     [],
@@ -115,7 +142,29 @@ export const ScenarioDataTable = observer(() => {
     getRowId: (row) => row.scenarioText,
     columns,
     data: viewModel.data,
+
     enableBottomToolbar: false,
+
+    enableFullScreenToggle: false,
+
+    enableRowActions: true,
+    positionActionsColumn: 'last',
+    displayColumnDefOptions: {
+      'mrt-row-actions': {
+        size: 120, //if using layoutMode that is not 'semantic', the columns will not auto-size, so you need to set the size manually
+        grow: false,
+      },
+    },
+    renderRowActions: (row) => (
+      <FlexRow>
+        <IconButton component={RouterLink} to={`/scenario/${row.row.original.id}`}>
+          <QueryStats />
+        </IconButton>
+        {row.row.original.createdBy === appModel.authModel.currentUser?.uid && (
+          <DeleteButton onDelete={() => console.log('removed')} />
+        )}
+      </FlexRow>
+    ),
 
     // enableGlobalFilter: false,
 
@@ -136,9 +185,11 @@ export const ScenarioDataTable = observer(() => {
     },
 
     initialState: {
-      sorting: [{ id: 'ranking', desc: false }],
+      sorting: [{ id: 'rating', desc: true }],
+
       columnVisibility: {
-        startDate: false,
+        createdAt: false,
+        userMade: false,
       },
     },
   });

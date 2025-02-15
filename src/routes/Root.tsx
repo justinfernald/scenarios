@@ -16,10 +16,9 @@ import { FlexColumn, FlexRow } from '../components/base/Flex';
 import { ButtonBase } from '@mui/material';
 import { ClassNames } from '@emotion/react';
 import { Scenario } from '../models/DataModel';
-import { reaction, toJS } from 'mobx';
+import { reaction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AnimateNumber } from '../components/AnimateNumber';
 import NumberFlow from '@number-flow/react';
 
 interface RootViewModelProps {

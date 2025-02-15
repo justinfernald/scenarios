@@ -3,8 +3,10 @@ import { observer } from 'mobx-react-lite';
 
 import { BaseViewModel, useViewModelConstructor } from '../utils/mobx/ViewModel';
 import { makeSimpleAutoObservable } from '../utils/mobx';
-import { ScenarioDataTable } from '../components/ScenarioDataTable';
-import { absolute, fullSize, relative } from '../styles';
+import { ScenariosDataTable } from '../components/ScenarioDataTable';
+import { absolute, flex1, fullSize, fullWidth, relative } from '../styles';
+import { FlexColumn } from '../components/base/Flex';
+import { AddScenarioForm } from '../components/AddScenarioForm';
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ListViewModelProps {}
@@ -20,11 +22,20 @@ export const List = observer(() => {
   const appModel = useAppModel();
   const vm = useViewModelConstructor(ListViewModel, {});
 
+  const { authModel } = appModel;
+
   return (
-    <div css={[fullSize, relative()]}>
-      <div css={absolute(0, 0, 0, 0)}>
-        <ScenarioDataTable />
+    <FlexColumn css={fullSize}>
+      {authModel.isLoggedIn && (
+        <FlexColumn css={[fullWidth]} alignItems="center">
+          <AddScenarioForm />
+        </FlexColumn>
+      )}
+      <div css={[fullWidth, flex1, relative()]}>
+        <div css={absolute(0, 0, 0, 0)}>
+          <ScenariosDataTable />
+        </div>
       </div>
-    </div>
+    </FlexColumn>
   );
 });

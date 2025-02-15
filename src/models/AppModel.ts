@@ -13,7 +13,7 @@ export class AppModel {
   constructor() {
     makeAutoObservable(this, {}, { autoBind: true });
     this.authModel = new AuthModel();
-    this.functionsModel = new FunctionsModel();
+    this.functionsModel = new FunctionsModel(this);
     this.dataModel = new DataModel();
   }
 }

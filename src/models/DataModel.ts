@@ -1,9 +1,9 @@
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { flowResult, makeAutoObservable, runInAction, toJS } from 'mobx';
+import { makeAutoObservable, runInAction, toJS } from 'mobx';
 
 export interface Scenario {
-  id?: string;
+  id: string;
   scenarioText: string;
   rating: number;
   timesShown: number;
@@ -24,7 +24,7 @@ export class DataModel {
     const rankingMap = new Map<string, number>();
 
     sortedScenarios.forEach((scenario, index) => {
-      rankingMap.set(scenario.id!, index + 1);
+      rankingMap.set(scenario.id, index + 1);
     });
 
     return rankingMap;

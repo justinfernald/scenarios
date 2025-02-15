@@ -6,22 +6,16 @@ import {
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import { fullSize } from '../styles';
-import { Button, IconButton, Link } from '@mui/material';
+import { IconButton } from '@mui/material';
 import { BaseViewModel, useViewModelConstructor } from '../utils/mobx/ViewModel';
 import { makeSimpleAutoObservable } from '../utils/mobx';
 import { AppModel, useAppModel } from '../models/AppModel';
 import { Link as RouterLink } from 'react-router-dom';
 import { Scenario } from '../models/DataModel';
-import {
-  Delete,
-  OpenInBrowser,
-  OpenInFull,
-  OpenInNew,
-  OpenWith,
-  QueryStats,
-} from '@mui/icons-material';
+import { QueryStats } from '@mui/icons-material';
 import { FlexRow } from './base/Flex';
 import { DeleteButton } from './DeleteButton';
+import { toJS } from 'mobx';
 
 export interface ScenarioDataTableViewModelProps {
   appModel: AppModel;
@@ -42,7 +36,7 @@ export class ScenarioDataTableViewModel extends BaseViewModel<ScenarioDataTableV
   }
 }
 
-export const ScenarioDataTable = observer(() => {
+export const ScenariosDataTable = observer(() => {
   const appModel = useAppModel();
 
   const viewModel = useViewModelConstructor(ScenarioDataTableViewModel, {
@@ -59,7 +53,7 @@ export const ScenarioDataTable = observer(() => {
       },
       {
         id: 'rank',
-        accessorFn: (row) => viewModel.rankingMap.get(row.id!) ?? Infinity,
+        accessorFn: (row) => viewModel.rankingMap.get(row.id) ?? Infinity,
         header: 'Rank',
         filterVariant: 'range',
         filterFn: 'betweenInclusive',
@@ -141,7 +135,7 @@ export const ScenarioDataTable = observer(() => {
   const table = useMaterialReactTable({
     getRowId: (row) => row.scenarioText,
     columns,
-    data: viewModel.data,
+    data: toJS(viewModel.data),
 
     enableBottomToolbar: false,
 
@@ -161,7 +155,9 @@ export const ScenarioDataTable = observer(() => {
           <QueryStats />
         </IconButton>
         {row.row.original.createdBy === appModel.authModel.currentUser?.uid && (
-          <DeleteButton onDelete={() => console.log('removed')} />
+          <DeleteButton
+            onDelete={() => appModel.functionsModel.removeScenario(row.row.original.id)}
+          />
         )}
       </FlexRow>
     ),

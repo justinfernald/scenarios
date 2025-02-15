@@ -4,6 +4,7 @@ import { ErrorPage } from './routes/ErrorPage';
 import { Root } from './routes/Root';
 import { Layout } from './routes/Layout';
 import { List } from './routes/List';
+import { Scenario } from './routes/Scenario';
 
 const router = createBrowserRouter([
   {
@@ -19,6 +20,10 @@ const router = createBrowserRouter([
         path: '/list',
         element: <List />,
       },
+      // {
+      //   path: '/list/:id',
+      //   element: <Scenario />,
+      // },
     ],
   },
 ]);

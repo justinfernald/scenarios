@@ -151,9 +151,9 @@ export const ScenariosDataTable = observer(() => {
     },
     renderRowActions: (row) => (
       <FlexRow>
-        <IconButton component={RouterLink} to={`/scenario/${row.row.original.id}`}>
+        {/* <IconButton component={RouterLink} to={`/scenario/${row.row.original.id}`}>
           <QueryStats />
-        </IconButton>
+        </IconButton> */}
         {row.row.original.createdBy === appModel.authModel.currentUser?.uid && (
           <DeleteButton
             onDelete={() => appModel.functionsModel.removeScenario(row.row.original.id)}

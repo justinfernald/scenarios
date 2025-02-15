@@ -38,12 +38,65 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
     const { scenarios } = this.props.appModel.dataModel;
     if (scenarios.length < 2) return;
 
-    const leftIndex = Math.floor(Math.random() * scenarios.length);
-    let rightIndex = Math.floor(Math.random() * (scenarios.length - 1));
-    if (rightIndex >= leftIndex) rightIndex++;
+    // Pick the left scenario at random.
+    const leftScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
-    this.leftScenario = scenarios[leftIndex];
-    this.rightScenario = scenarios[rightIndex];
+    // Base standard deviation for rating differences.
+    const baseStdDev = 100; // Adjust to control typical closeness
+
+    // Sample from a normal distribution using Box-Muller.
+    const sampleNormal = (mean = 0, stdDev = 1) => {
+      let u = 0,
+        v = 0;
+      while (u === 0) u = Math.random(); // avoid zero for log
+      while (v === 0) v = Math.random();
+      return mean + stdDev * Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    };
+
+    // Compute a target rating based on the left scenario.
+    const ratingOffset = sampleNormal(0, baseStdDev);
+    const targetRating = leftScenario.rating + ratingOffset;
+
+    // Create candidate list excluding the left scenario.
+    const candidates = scenarios.filter((s) => s.id !== leftScenario.id);
+
+    // Compute an effective sigma for a candidate, inflating the baseStdDev if timesShown is low.
+    const computeEffectiveSigma = (scenario: Scenario) => {
+      const threshold = 5; // if timesShown is below threshold, treat rating as less reliable
+      if (scenario.timesShown < threshold) {
+        // e.g. timesShown = 0 => effective sigma doubles
+        return baseStdDev * (1 + (threshold - scenario.timesShown) / threshold);
+      }
+      return baseStdDev;
+    };
+
+    // For each candidate, calculate a weight based on the Gaussian distribution around targetRating.
+    let totalWeight = 0;
+    const weightedCandidates = candidates.map((scenario) => {
+      const effectiveSigma = computeEffectiveSigma(scenario);
+      const diff = scenario.rating - targetRating;
+      const weight = Math.exp(-(diff * diff) / (2 * effectiveSigma * effectiveSigma));
+      totalWeight += weight;
+      return { scenario, weight };
+    });
+
+    // Do a weighted random selection.
+    let randomThreshold = Math.random() * totalWeight;
+    let selectedScenario = null;
+    for (const candidate of weightedCandidates) {
+      randomThreshold -= candidate.weight;
+      if (randomThreshold <= 0) {
+        selectedScenario = candidate.scenario;
+        break;
+      }
+    }
+    // Fallback to random choice if needed.
+    if (!selectedScenario) {
+      selectedScenario = candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    this.leftScenario = leftScenario;
+    this.rightScenario = selectedScenario;
   }
 
   setup() {

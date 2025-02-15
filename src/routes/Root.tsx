@@ -16,7 +16,7 @@ import { FlexColumn, FlexRow } from '../components/base/Flex';
 import { ButtonBase } from '@mui/material';
 import { ClassNames } from '@emotion/react';
 import { Scenario } from '../models/DataModel';
-import { reaction } from 'mobx';
+import { action, reaction } from 'mobx';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import NumberFlow from '@number-flow/react';
@@ -42,7 +42,7 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
     const leftScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
     // Base standard deviation for rating differences.
-    const baseStdDev = 100; // Adjust to control typical closeness
+    const baseStdDev = 20; // Adjust to control typical closeness
 
     // Sample from a normal distribution using Box-Muller.
     const sampleNormal = (mean = 0, stdDev = 1) => {
@@ -62,7 +62,7 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
 
     // Compute an effective sigma for a candidate, inflating the baseStdDev if timesShown is low.
     const computeEffectiveSigma = (scenario: Scenario) => {
-      const threshold = 5; // if timesShown is below threshold, treat rating as less reliable
+      const threshold = 10; // if timesShown is below threshold, treat rating as less reliable
       if (scenario.timesShown < threshold) {
         // e.g. timesShown = 0 => effective sigma doubles
         return baseStdDev * (1 + (threshold - scenario.timesShown) / threshold);
@@ -124,17 +124,19 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
       rejectedId,
     );
 
-    result.then(({ acceptedRating, rejectedRating }) => {
-      if (!leftScenario || !rightScenario) return;
+    result.then(
+      action(({ acceptedRating, rejectedRating }) => {
+        if (!leftScenario || !rightScenario) return;
 
-      if (leftScenario?.id === acceptedId) {
-        leftScenario.rating = acceptedRating;
-        rightScenario.rating = rejectedRating;
-      } else {
-        leftScenario.rating = rejectedRating;
-        rightScenario.rating = acceptedRating;
-      }
-    });
+        if (leftScenario?.id === acceptedId) {
+          leftScenario.rating = acceptedRating;
+          rightScenario.rating = rejectedRating;
+        } else {
+          leftScenario.rating = rejectedRating;
+          rightScenario.rating = acceptedRating;
+        }
+      }),
+    );
   }
 }
 
@@ -224,7 +226,6 @@ const ScenarioButton = observer((props: ScenarioButtonProps) => {
                 ]}
               >
                 <NumberFlow value={Math.floor(rating)} />
-                {/* {rating} */}
                 {timesShown < 25 ? '?' : ''}
               </FlexRow>
             </FlexColumn>
@@ -303,7 +304,22 @@ export const Root = observer(() => {
 
   return (
     <FlexColumn css={[fullSize]}>
-      <FlexRow css={[flex1, fullWidth, { padding: 20 }, relative()]} gap={20}>
+      <FlexRow
+        css={[
+          flex1,
+          fullWidth,
+          { padding: 20 },
+          relative(),
+
+          {
+            // if width < 600px, change to column
+            '@media (max-width: 900px)': {
+              flexDirection: 'column',
+            },
+          },
+        ]}
+        gap={20}
+      >
         <FlexColumn
           justifyContent="center"
           alignItems="center"

@@ -42,7 +42,7 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
     const leftScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
     // Base standard deviation for rating differences.
-    const baseStdDev = 20; // Adjust to control typical closeness
+    const baseStdDev = 200; // Adjust to control typical closeness
 
     // Sample from a normal distribution using Box-Muller.
     const sampleNormal = (mean = 0, stdDev = 1) => {

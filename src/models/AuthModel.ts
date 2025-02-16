@@ -1,7 +1,7 @@
 // src/models/AuthModel.ts
 import { action, makeAutoObservable } from 'mobx';
 import { auth, googleProvider, signInWithPopup, signOut } from '../firebaseConfig';
-import { onAuthStateChanged, User } from 'firebase/auth';
+import { onAuthStateChanged, signInAnonymously, User } from 'firebase/auth';
 
 export class AuthModel {
   user: User | null = null;
@@ -19,8 +19,23 @@ export class AuthModel {
       action((user: User | null) => {
         this.user = user;
         this.isLoading = false;
+        if (!user) {
+          this.signInAnonymously();
+        }
       }),
     );
+  }
+
+  // Sign in anonymously
+  async signInAnonymously() {
+    try {
+      this.isLoading = true;
+      await signInAnonymously(auth);
+    } catch (error) {
+      console.error('Error signing in anonymously:', error);
+    } finally {
+      this.isLoading = false;
+    }
   }
 
   // Sign in with Google
@@ -54,6 +69,6 @@ export class AuthModel {
 
   // Check if the user is logged in
   get isLoggedIn() {
-    return !!this.user;
+    return !!this.user && !this.user.isAnonymous;
   }
 }

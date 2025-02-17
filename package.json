@@ -19,7 +19,7 @@
     "@emotion/styled": "^11.13.0",
     "@mui/icons-material": "^6.1.2",
     "@mui/material": "^6.1.2",
-    "@mui/x-date-pickers": "^7.18.0",
+    "@mui/x-date-pickers": "^7.27.0",
     "@number-flow/react": "^0.5.5",
     "chart.js": "^4.4.4",
     "chartjs-adapter-date-fns": "^3.0.0",

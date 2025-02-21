@@ -4,6 +4,12 @@ import * as logger from 'firebase-functions/logger';
 import { getFirestore } from 'firebase-admin/firestore';
 import { Timestamp } from 'firebase-admin/firestore';
 
+const credibilityThreshold = 50;
+const baseK = 32;
+const stabilityThreshold = 5;
+const largeRatingDifference = 200;
+const moderateRatingDifference = 100;
+
 export const voteOnScenario = onCall({ cors: true }, async (request) => {
   logger.info('voteOnScenario called', { structuredData: true });
 
@@ -39,24 +45,30 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
   const user = userDoc.data()!;
   /* eslint-enable @typescript-eslint/no-non-null-assertion */
 
-  // Check user credibility
-  const credibilityThreshold = 50;
-
   let wasConsidered = false;
   let newRatingA = acceptedScenario.rating;
   let newRatingB = rejectedScenario.rating;
 
   if (user.credibility >= credibilityThreshold) {
     wasConsidered = true;
-    // Calculate new ratings
-    const K = 32;
+
+    // Calculate new ratings with adjusted K factor for the first 5 times
+    const K_A = Math.max(
+      baseK * (stabilityThreshold - acceptedScenario.timesShown) * 2,
+      baseK,
+    );
+    const K_B = Math.max(
+      baseK * (stabilityThreshold - rejectedScenario.timesShown) * 2,
+      baseK,
+    );
+
     const expectedA =
       1 / (1 + Math.pow(10, (rejectedScenario.rating - acceptedScenario.rating) / 400));
     const expectedB =
       1 / (1 + Math.pow(10, (acceptedScenario.rating - rejectedScenario.rating) / 400));
 
-    newRatingA = acceptedScenario.rating + K * (1 - expectedA);
-    newRatingB = rejectedScenario.rating + K * (0 - expectedB);
+    newRatingA = acceptedScenario.rating + K_A * (1 - expectedA);
+    newRatingB = rejectedScenario.rating + K_B * (0 - expectedB);
 
     // Update scenario ratings
     await Promise.all([
@@ -78,20 +90,22 @@ export const voteOnScenario = onCall({ cors: true }, async (request) => {
   const isChoiceExpected = acceptedScenario.rating > rejectedScenario.rating;
 
   let credibilityChange = 0;
-  if (ratingDifference > 200) {
+  if (ratingDifference > largeRatingDifference) {
     // Large rating difference: credibility change is amplified
     credibilityChange = isChoiceExpected ? 1 : -2;
-  } else if (ratingDifference > 100) {
+  } else if (ratingDifference > moderateRatingDifference) {
     // Moderate rating difference: standard credibility change
     credibilityChange = isChoiceExpected ? 1 : -1;
-  } else {
-    // Small rating difference: credibility change is reduced
-    credibilityChange = isChoiceExpected ? 0.1 : -0.1;
   }
 
-  // Update user credibility
-  const newCredibility = user.credibility + credibilityChange;
-  await userRef.update({ credibility: newCredibility });
+  if (
+    acceptedScenario.timesShown >= stabilityThreshold &&
+    rejectedScenario.timesShown >= stabilityThreshold
+  ) {
+    // Update user credibility
+    const newCredibility = user.credibility + credibilityChange;
+    await userRef.update({ credibility: newCredibility });
+  }
 
   // Add a new vote document to the votes collection
   const voteData = {

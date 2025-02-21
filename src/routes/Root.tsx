@@ -42,7 +42,7 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
     const leftScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
     // Base standard deviation for rating differences.
-    const baseStdDev = 200; // Adjust to control typical closeness
+    const baseStdDev = 100; // Adjust to control typical closeness
 
     // Sample from a normal distribution using Box-Muller.
     const sampleNormal = (mean = 0, stdDev = 1) => {
@@ -62,7 +62,7 @@ export class RootViewModel extends BaseViewModel<RootViewModelProps> {
 
     // Compute an effective sigma for a candidate, inflating the baseStdDev if timesShown is low.
     const computeEffectiveSigma = (scenario: Scenario) => {
-      const threshold = 10; // if timesShown is below threshold, treat rating as less reliable
+      const threshold = 5; // if timesShown is below threshold, treat rating as less reliable
       if (scenario.timesShown < threshold) {
         // e.g. timesShown = 0 => effective sigma doubles
         return baseStdDev * (1 + (threshold - scenario.timesShown) / threshold);

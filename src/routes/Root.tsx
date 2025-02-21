@@ -226,7 +226,7 @@ const ScenarioButton = observer((props: ScenarioButtonProps) => {
                 ]}
               >
                 <NumberFlow value={Math.floor(rating)} />
-                {timesShown < 25 ? '?' : ''}
+                {timesShown < 5 ? '?' : ''}
               </FlexRow>
             </FlexColumn>
           </ButtonBase>

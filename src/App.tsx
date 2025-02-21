@@ -9,6 +9,7 @@ import { enUS } from 'date-fns/locale/en-US';
 import { forwardRef } from 'react';
 import { Link as RouterLink, LinkProps as RouterLinkProps } from 'react-router-dom';
 import { createTheme, LinkProps, ThemeProvider } from '@mui/material';
+import { CookieConsent } from './components/CookieConsent';
 
 // eslint-disable-next-line react/display-name
 const LinkBehavior = forwardRef<
@@ -53,6 +54,7 @@ export const App = () => {
       <ThemeProvider theme={theme}>
         <AppModelContext.Provider value={globalAppModel}>
           <Router />
+          <CookieConsent />
         </AppModelContext.Provider>
       </ThemeProvider>
     </LocalizationProvider>
